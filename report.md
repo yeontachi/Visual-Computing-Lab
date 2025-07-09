@@ -8,13 +8,19 @@
 
 ### Step 1: 이미지 불러오기 및 HSV 변환
 
+![Alt text](/images/step1_original.jpg)
+
 컬러 이미지의 RGB(BGR) 정보는 조명 변화에 민감하므로, 색상 기반 필터링을 위해 HSV(Hue, Saturation, Value) 색공간으로 변환한다. HSV에서 H(Hue)는 색상 정보를 분리해내는 데 가장 효과적이다. OpenCV에서의 Hue는 0\~180 범위로 표현된다.
+
+![Alt text](/images/step1_hsv.jpg)
 
 * 수식: RGB → HSV 변환은 비선형 변환이지만, OpenCV는 `cv::cvtColor(img, hsv, COLOR_BGR2HSV)` 함수로 내부 처리
 * 주요 개념: 색상은 Hue로, 밝기와 조도는 Saturation, Value로 분리됨
 * 목적: 공 또는 당구대와 같이 색상이 명확한 객체는 HSV로 필터링하는 것이 효과적
 
 ### Step 2: 테이블 색상 마스킹 및 노이즈 제거
+
+![Alt text](/images/step2_table_mask_green.jpg)
 
 테이블은 표준 당구대 기준으로 파란색(또는 초록색)으로 칠해져 있으며, 일정 범위의 Hue 값으로 분리 가능하다. 이를 위해 `cv::inRange()`를 사용하여 이진 마스크를 생성하고, `cv::erode`, `cv::dilate`로 노이즈 제거를 수행한다. 이 과정을 통해 테이블 외부 영역(벽, 그림자 등)을 효과적으로 제거할 수 있다.
 
@@ -26,6 +32,8 @@
 
 ### Step 3: 테이블 외곽 윤곽선 및 꼭짓점 검출
 
+![Alt text](/images/step3_corners_green.jpg)
+
 노이즈가 제거된 마스크에서 외곽선을 검출하기 위해 `cv::findContours()`를 사용하고, 가장 큰 윤곽선(contour)을 선택하여 테이블 외곽으로 가정한다. 이후 `cv::approxPolyDP()`로 윤곽선을 꼭짓점 형태로 근사하고, `cv::convexHull()`로 외곽 다각형을 정제한다.
 
 * 수식:
@@ -36,6 +44,8 @@
 * 개념: Convex Hull은 임의의 점 집합에 대해 가장 바깥을 감싸는 볼록 다각형을 생성하는 연산이며, 기하학적 정규화를 위해 유용
 
 ### Step 4: 당구공 중심 검출 및 mm 좌표 변환
+
+![Alt text](/images/step4_result_blue.jpg)
 
 공은 일반적으로 색상이 뚜렷하고 구형이며, 이를 기반으로 HSV 마스크로 영역을 추출하고 Hough Circle Transform으로 원을 검출한다. 특히 빨간 공은 HSV상에서 두 개의 Hue 범위(0~~10, 170~~180)를 OR 연산으로 결합하여 처리하였다. 검출된 중심점은 Step 3에서 얻은 4 꼭짓점을 기준으로 실측 크기(2448mm x 1224mm)에 맞춰 좌표를 mm 단위로 변환한다.
 
